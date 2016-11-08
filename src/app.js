@@ -18,7 +18,8 @@ class App extends React.Component {
     this.createUser = this.createUser.bind(this);
     this.getUser = this.getUser.bind(this);
     this.state = {
-      signedIn: false
+      signedIn: false,
+      users: []
     };
   }
 
@@ -34,6 +35,18 @@ class App extends React.Component {
         });
       }
     });
+    firebase.database().ref(`users`)
+      .on('value', (res) => {
+        const userArray = [];
+        const userData = res.val();
+        for (let key in userData) {
+          console.log(userData);
+          userArray.push(userData[key]);
+        }
+        this.setState({
+          users: userArray
+        });
+      });
   }
 
   getUser() {
@@ -47,12 +60,26 @@ class App extends React.Component {
     }
   }
 
+  determineHouse() {
+    const houses = ['Gryffindor', 'Hufflepuff', 'Slytherin', 'Ravenclaw'];
+    const random = Math.floor(Math.random() * houses.length);
+
+    return houses[random];
+  }
+
   createUser(e) {
     e.preventDefault();
     const email = this.createEmail.value;
     const password = this.createPassword.value;
 
-    firebase.auth().createUserWithEmailAndPassword(email, password).catch(function(error){
+    firebase.auth().createUserWithEmailAndPassword(email, password).then(() => {
+      const user = firebase.auth().currentUser;
+      const username = user.email.split("@")[0];
+      const house = this.determineHouse();
+      const dbRef = firebase.database().ref(`users`);
+      dbRef.push({username, house});
+    })
+    .catch(function(error){
       const errorCode = error.code;
       const errorMessage = error.message;
       alert(`Error Code: ${errorCode}. Message: ${errorMessage}`);
@@ -102,6 +129,13 @@ class App extends React.Component {
           <h1>Signout</h1>
           <button type="submit">Sign Out</button>
         </form>
+        <div>
+          <h2>Created Users</h2>
+          <ul>
+          {}
+          {this.state.users.map((user, i) => <li key={i}>{user.username} - {user.house}</li>)}
+          </ul>
+        </div>
         {this.getUser()}
         <p>User is currently signed {this.state.signedIn ? 'in' : 'out'}</p>
       </div>
