@@ -1,39 +1,24 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
+import { Router, Route, Link, browserHistory } from 'react-router';
 
-var config = {
-  apiKey: "AIzaSyCisMc23Sh_xfshqRLo2F8M3ia70KTovac",
-  authDomain: "hogwarts-49243.firebaseapp.com",
-  databaseURL: "https://hogwarts-49243.firebaseio.com",
-  storageBucket: "hogwarts-49243.appspot.com",
-  messagingSenderId: "474309759478"
-};
-firebase.initializeApp(config);
-
-
+import SignIn from './signIn';
+import SignOut from './signOut';
+import CreateUser from './createUser';
+import Dashboard from './dashboard';
+import auth from './auth';
 
 class App extends React.Component {
   constructor(props) {
     super(props);
-    this.createUser = this.createUser.bind(this);
-    this.getUser = this.getUser.bind(this);
+
     this.state = {
       signedIn: false
     };
   }
 
   componentWillMount() {
-    firebase.auth().onAuthStateChanged((user) => {
-      if (user) {
-        this.setState({
-          signedIn: true
-        });
-      } else {
-        this.setState({
-          signedIn: false
-        });
-      }
-    });
+    this.setState({signedIn: auth.loggedIn()});
   }
 
   getUser() {
@@ -47,61 +32,20 @@ class App extends React.Component {
     }
   }
 
-  createUser(e) {
-    e.preventDefault();
-    const email = this.createEmail.value;
-    const password = this.createPassword.value;
-
-    firebase.auth().createUserWithEmailAndPassword(email, password).catch(function(error){
-      const errorCode = error.code;
-      const errorMessage = error.message;
-      alert(`Error Code: ${errorCode}. Message: ${errorMessage}`);
-    });
-  }
-
-  loginUser(e) {
-    e.preventDefault();
-    const email = this.loginEmail.value;
-    const password = this.loginPassword.value;
-
-    firebase.auth().signInWithEmailAndPassword(email, password).catch(function(error){
-      const errorCode = error.code;
-      const errorMessage = error.message;
-      alert(`Error Code: ${errorCode}. Message: ${errorMessage}`);
-    });
-  }
-
-  signOutUser(e) {
-    e.preventDefault();
-    firebase.auth().signOut().then(function() {
-      alert('User signed out.');
-
-    }, function(error) {
-      const errorCode = error.code;
-      const errorMessage = error.message;
-      alert(`Error Code: ${errorCode}. Message: ${errorMessage}`);
-    });
+  requireAuth(nextState, replace) {
+    if (!this.state.signedIn) {
+      replace({
+        pathname: '/',
+      })
+    }
   }
 
   render() {
+    console.log(this.state);
     return (
       <div>
-        <form onSubmit={(e) => this.createUser.call(this, e)}>
-          <h1>Create A New User</h1>
-          <input type="text" placeholder="Enter email" ref={ref => this.createEmail = ref} />
-          <input type="text" placeholder="Enter password" ref={ref => this.createPassword = ref} />
-          <button type="submit">Create User</button>
-        </form>
-        <form onSubmit={(e) => this.loginUser.call(this, e)}>
-          <h1>Login</h1>
-          <input type="text" placeholder="Enter email" ref={ref => this.loginEmail = ref} />
-          <input type="text" placeholder="Enter password" ref={ref => this.loginPassword = ref} />
-          <button type="submit">Login</button>
-        </form>
-        <form onSubmit={(e) => this.signOutUser.call(this, e)}>
-          <h1>Signout</h1>
-          <button type="submit">Sign Out</button>
-        </form>
+        {this.state.signedIn ? <Link to="/signout">Sign Out</Link> : <SignIn />}
+        {!this.state.signedIn && <CreateUser />}
         {this.getUser()}
         <p>User is currently signed {this.state.signedIn ? 'in' : 'out'}</p>
       </div>
@@ -109,4 +53,11 @@ class App extends React.Component {
   }
 }
 
-ReactDOM.render(<App />, document.getElementById("app"));
+
+ReactDOM.render((
+  <Router history={browserHistory}>
+    <Route path="/" component={App} />
+    <Route path="signout" component={SignOut} />
+    <Route path="dashboard" component={Dashboard} />
+  </Router>
+), document.getElementById("app"));
