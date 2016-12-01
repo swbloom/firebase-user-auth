@@ -11,8 +11,10 @@ firebase.initializeApp(config);
 module.exports = {
 
   loggedIn() {
-    firebase.auth().onAuthStateChanged((user) => {
-      return !!user;
+    return new Promise(function(resolve, reject) {
+      firebase.auth().onAuthStateChanged((user) => {
+        resolve(!!user);
+      });
     });
   },
 
